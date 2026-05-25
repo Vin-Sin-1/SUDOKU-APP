@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <rect width="192" height="192" rx="40" fill="#2e9e6b"/>
+  <g fill="none" stroke="#ffffff" stroke-width="4">
+    <!-- outer border -->
+    <rect x="24" y="24" width="144" height="144" rx="6"/>
+    <!-- inner 3x3 box lines -->
+    <line x1="72" y1="24" x2="72" y2="168"/>
+    <line x1="120" y1="24" x2="120" y2="168"/>
+    <line x1="24" y1="72" x2="168" y2="72"/>
+    <line x1="24" y1="120" x2="168" y2="120"/>
+    <!-- thin cell lines -->
+    <line x1="48" y1="24" x2="48" y2="168" stroke-width="1.5" stroke-opacity="0.4"/>
+    <line x1="96" y1="24" x2="96" y2="168" stroke-width="1.5" stroke-opacity="0.4"/>
+    <line x1="144" y1="24" x2="144" y2="168" stroke-width="1.5" stroke-opacity="0.4"/>
+    <line x1="24" y1="48" x2="168" y2="48" stroke-width="1.5" stroke-opacity="0.4"/>
+    <line x1="24" y1="96" x2="168" y2="96" stroke-width="1.5" stroke-opacity="0.4"/>
+    <line x1="24" y1="144" x2="168" y2="144" stroke-width="1.5" stroke-opacity="0.4"/>
+  </g>
+  <!-- sample digits -->
+  <text font-family="Arial" font-weight="bold" fill="white" font-size="22" text-anchor="middle">
+    <tspan x="48" y="66">5</tspan>
+    <tspan x="96" y="66">3</tspan>
+    <tspan x="48" y="114">6</tspan>
+    <tspan x="144" y="114">9</tspan>
+    <tspan x="96" y="162">8</tspan>
+    <tspan x="144" y="162">4</tspan>
+  </text>
+</svg>
