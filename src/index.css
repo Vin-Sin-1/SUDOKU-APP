@@ -1,0 +1,63 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { overflow: hidden; }
+
+@keyframes toastIn {
+  0%   { transform: translateX(-50%) translateY(-80px) scale(0.8); opacity: 0; }
+  20%  { transform: translateX(-50%) translateY(0)     scale(1.05); opacity: 1; }
+  30%  { transform: translateX(-50%) translateY(0)     scale(1);    opacity: 1; }
+  100% { transform: translateX(-50%) translateY(0)     scale(1);    opacity: 1; }
+}
+
+@keyframes toastOut {
+  from { opacity: 1; transform: translateX(-50%) translateY(0); }
+  to   { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+}
+
+@keyframes cellPop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.25); }
+  70%  { transform: scale(0.93); }
+  100% { transform: scale(1); }
+}
+
+@keyframes cellShake {
+  0%,100% { transform: translateX(0); }
+  20%     { transform: translateX(-6px); }
+  40%     { transform: translateX(6px); }
+  60%     { transform: translateX(-4px); }
+  80%     { transform: translateX(3px); }
+}
+
+@keyframes winPop {
+  0%   { transform: scale(0.7) translateY(40px); opacity: 0; }
+  60%  { transform: scale(1.05) translateY(-8px); opacity: 1; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.cell-pop   { animation: cellPop   0.35s cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
+.cell-shake { animation: cellShake 0.4s  ease both; }
+.win-pop    { animation: winPop    0.5s  cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
+
+.btn-num-3d {
+  transition: transform 0.08s ease, box-shadow 0.08s ease !important;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-num-3d:active {
+  transform: translateY(5px) !important;
+  box-shadow: 0 1px 0 var(--btn-num-edge), 0 3px 6px rgba(0,0,0,0.2) !important;
+}
+
+.btn-action-3d {
+  transition: transform 0.08s ease, box-shadow 0.08s ease !important;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-action-3d:active {
+  transform: translateY(3px) !important;
+  box-shadow: 0 1px 0 var(--btn-action-edge), 0 2px 4px rgba(0,0,0,0.15) !important;
+}
+
+.theme-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+  -webkit-tap-highlight-color: transparent;
+}
+.theme-card:active { transform: scale(0.96) !important; }

@@ -158,6 +158,8 @@ export default function SudokuApp() {
   const [autoRemove, setAutoRemove] = useState(true);
   const [score, setScore]     = useState(0);
   const [showDiffMenu, setShowDiffMenu] = useState(false);
+  const [fastPencilOn, setFastPencilOn] = useState(false);
+  const [preAutoNotes, setPreAutoNotes] = useState(null);
 
   const timerRunning = !!(board && !won && !paused);
   const { seconds, reset: resetTimer } = useTimer(timerRunning);
@@ -175,6 +177,8 @@ export default function SudokuApp() {
     setPencilNum(null);
     setHistory([]);
     setScore(0);
+    setFastPencilOn(false);
+    setPreAutoNotes(null);
     resetTimer();
   }, [difficulty, resetTimer]);
 
@@ -275,8 +279,22 @@ export default function SudokuApp() {
 
   function fastPencil() {
     if (!board || won || paused) return;
-    saveHistory();
-    setNotes(calcCandidates(board));
+    if (fastPencilOn) {
+      setNotes(preAutoNotes || {});
+      setFastPencilOn(false);
+      setPreAutoNotes(null);
+    } else {
+      const snapshot = Object.fromEntries(Object.entries(notes).map(([k,v]) => [k, new Set(v)]));
+      setPreAutoNotes(snapshot);
+      const candidates = calcCandidates(board);
+      const merged = Object.fromEntries(Object.entries(snapshot).map(([k,v]) => [k, new Set(v)]));
+      for (const [key, set] of Object.entries(candidates)) {
+        if (!merged[key]) merged[key] = new Set();
+        for (const n of set) merged[key].add(n);
+      }
+      setNotes(merged);
+      setFastPencilOn(true);
+    }
   }
 
   function erase() {
@@ -299,6 +317,8 @@ export default function SudokuApp() {
     setNotes(prev.notes);
     setMistakeCount(prev.mistakeCount);
     setHistory(h => h.slice(0, -1));
+    setFastPencilOn(false);
+    setPreAutoNotes(null);
   }
 
   function hint() {
@@ -338,14 +358,15 @@ export default function SudokuApp() {
 
   return (
     <div style={{
-      minHeight: "100vh",
+      height: "100svh",
       background: C.bg,
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
+      justifyContent: "space-evenly",
       fontFamily: "'Nunito', 'Segoe UI', sans-serif",
-      paddingBottom: 24,
       userSelect: "none",
+      overflow: "hidden",
     }}>
       {/* ── Header ── */}
       <div style={{
@@ -365,7 +386,7 @@ export default function SudokuApp() {
       </div>
 
       {/* ── Score ── */}
-      <div style={{ textAlign:"center", marginBottom:4 }}>
+      <div style={{ textAlign:"center" }}>
         <div style={{ fontSize:20, fontWeight:800, color:C.primary }}>
           Score: {score.toLocaleString()}
         </div>
@@ -375,7 +396,7 @@ export default function SudokuApp() {
       <div style={{
         width:"100%", maxWidth:430,
         display:"flex", alignItems:"center", justifyContent:"space-between",
-        padding:"0 16px 6px",
+        padding:"0 16px",
       }}>
         <span style={{ fontSize:13, fontWeight:700, color:C.textMuted }}>
           Mistakes: <span style={{ color: mistakeCount > 0 ? C.mistakeRed : C.textMuted }}>{mistakeCount}</span>/3
@@ -426,13 +447,13 @@ export default function SudokuApp() {
 
       {/* ── Grid ── */}
       <div style={{
-        width:"calc(100% - 24px)", maxWidth:400,
+        width:"100%", maxWidth:"100%",
         aspectRatio:"1/1",
         background:C.gridBg,
-        borderRadius:16,
-        border:`2px solid ${C.border}`,
+        borderRadius:0,
+        border:"none",
         overflow:"hidden",
-        margin:"0 12px 12px",
+        margin:0,
         boxShadow:"0 4px 20px rgba(46,158,107,0.1)",
         position:"relative",
       }}>
@@ -497,7 +518,7 @@ export default function SudokuApp() {
                     }
                   }}>                  {val ? (
                     <span style={{
-                      fontSize:"clamp(14px,4vw,22px)",
+                      fontSize:"clamp(18px,6vw,32px)",
                       fontWeight: isGiven ? 800 : 600,
                       color: isSel ? C.white : textColor,
                       lineHeight:1,
@@ -506,7 +527,7 @@ export default function SudokuApp() {
                     <div style={{
                       display:"grid", gridTemplateColumns:"repeat(3,1fr)",
                       width:"90%", height:"90%",
-                      fontSize:"clamp(7px,1.8vw,10px)",
+                      fontSize:"clamp(8px,2.2vw,13px)",
                       color: isSel ? "rgba(255,255,255,0.9)" : C.note,
                       fontWeight:700, textAlign:"center",
                       lineHeight:"1.5",
@@ -525,14 +546,13 @@ export default function SudokuApp() {
 
       {/* ── Action bar ── */}
       <div style={{
-        width:"calc(100% - 24px)", maxWidth:400,
+        width:"100%", padding:"0 12px",
         display:"flex", justifyContent:"space-around", alignItems:"center",
-        marginBottom:12,
       }}>
         {[
           { label:"Undo",       icon:"↩",  action: undo,        active: false },
           { label:"Erase",      icon:"⬜",  action: erase,       active: false },
-          { label:"Fast Pencil",icon:"✏️",  action: fastPencil,  active: false, badge:"∞" },
+          { label:"Fast Pencil",icon:"✏️",  action: fastPencil,  active: fastPencilOn, badge: fastPencilOn?"ON":"OFF" },
           { label:"Pencil",     icon:"✒️",  action: () => { setPencilMode(p => { if(p) setPencilNum(null); return !p; }); }, active: pencilMode, badge: pencilMode?"ON":"OFF" },
           { label:"Hint",       icon:"💡",  action: hint,        active: false, badge:"∞" },
         ].map(({ label, icon, action, active, badge }) => (
@@ -564,9 +584,9 @@ export default function SudokuApp() {
 
       {/* ── Number Pad ── */}
       <div style={{
-        width:"calc(100% - 24px)", maxWidth:400,
+        width:"100%", padding:"0 8px",
         display:"grid", gridTemplateColumns:"repeat(9,1fr)",
-        gap:5, marginBottom:12,
+        gap:5,
       }}>
         {[1,2,3,4,5,6,7,8,9].map(n => {
           const rem = remaining[n];
@@ -604,9 +624,8 @@ export default function SudokuApp() {
 
       {/* ── Auto-remove toggle ── */}
       <div style={{
-        width:"calc(100% - 24px)", maxWidth:400,
+        width:"100%", padding:"0 12px",
         display:"flex", justifyContent:"flex-end", alignItems:"center", gap:8,
-        marginBottom:4,
       }}>
         <span style={{ fontSize:11, color:C.textMuted, fontWeight:700 }}>Auto-remove notes</span>
         <div
@@ -626,20 +645,6 @@ export default function SudokuApp() {
           }}/>
         </div>
       </div>
-
-      {/* ── New Game button ── */}
-      <button onClick={() => startGame()} style={{
-        marginTop:8,
-        padding:"12px 40px",
-        borderRadius:16,
-        border:"none",
-        background:`linear-gradient(135deg, ${C.primary}, ${C.primaryLight})`,
-        color:C.white,
-        fontWeight:800, fontSize:15,
-        cursor:"pointer",
-        boxShadow:`0 4px 16px rgba(46,158,107,0.35)`,
-        letterSpacing:0.3,
-      }}>New Game</button>
 
       {/* ── Win Overlay ── */}
       {won && (

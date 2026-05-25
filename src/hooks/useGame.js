@@ -1,8 +1,37 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPuzzle } from '../engine/sudoku.js';
 import { getConflicts, calcCandidates } from '../engine/candidates.js';
 import { calcScore } from '../engine/scoring.js';
+import { getRandomMessage } from '../constants/messages.js';
 import { useTimer } from './useTimer.js';
+
+function getCompletedRows(board, solution) {
+  const done = new Set();
+  for (let r = 0; r < 9; r++)
+    if (board[r].every((v, c) => v !== 0 && v === solution[r][c])) done.add(`r${r}`);
+  return done;
+}
+
+function getCompletedCols(board, solution) {
+  const done = new Set();
+  for (let c = 0; c < 9; c++)
+    if (board.every((row, r) => row[c] !== 0 && row[c] === solution[r][c])) done.add(`c${c}`);
+  return done;
+}
+
+function getCompletedBoxes(board, solution) {
+  const done = new Set();
+  for (let br = 0; br < 3; br++) {
+    for (let bc = 0; bc < 3; bc++) {
+      let complete = true;
+      for (let r = br * 3; r < br * 3 + 3; r++)
+        for (let c = bc * 3; c < bc * 3 + 3; c++)
+          if (board[r][c] === 0 || board[r][c] !== solution[r][c]) { complete = false; break; }
+      if (complete) done.add(`b${br}${bc}`);
+    }
+  }
+  return done;
+}
 
 export function useGame() {
   const [difficulty, setDifficulty]     = useState('expert');
@@ -23,9 +52,35 @@ export function useGame() {
   const [showDiffMenu, setShowDiffMenu] = useState(false);
   const [fastPencilOn, setFastPencilOn] = useState(false);
   const [preAutoNotes, setPreAutoNotes] = useState(null);
+  const [lastAction, setLastAction]     = useState(null);
+  const [toast, setToast]               = useState(null);
+  const toastTimer = useRef(null);
 
   const timerRunning = !!(board && !won && !paused);
   const { seconds, reset: resetTimer } = useTimer(timerRunning);
+
+  function showToast(message) {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast({ message, id: Date.now() });
+    toastTimer.current = setTimeout(() => setToast(null), 2500);
+  }
+
+  function checkCompletions(newBoard, sol, prevBoard) {
+    const prevRows  = getCompletedRows(prevBoard, sol);
+    const prevCols  = getCompletedCols(prevBoard, sol);
+    const prevBoxes = getCompletedBoxes(prevBoard, sol);
+    const newRows   = getCompletedRows(newBoard, sol);
+    const newCols   = getCompletedCols(newBoard, sol);
+    const newBoxes  = getCompletedBoxes(newBoard, sol);
+
+    const newlyBox = [...newBoxes].filter((k) => !prevBoxes.has(k));
+    const newlyRow = [...newRows].filter((k) => !prevRows.has(k));
+    const newlyCol = [...newCols].filter((k) => !prevCols.has(k));
+
+    if (newlyBox.length)      showToast(getRandomMessage('box'));
+    else if (newlyRow.length) showToast(getRandomMessage('row'));
+    else if (newlyCol.length) showToast(getRandomMessage('col'));
+  }
 
   const startGame = useCallback((diff = difficulty) => {
     const { puzzle, solution: sol } = createPuzzle(diff);
@@ -42,12 +97,13 @@ export function useGame() {
     setScore(0);
     setFastPencilOn(false);
     setPreAutoNotes(null);
+    setLastAction(null);
+    setToast(null);
     resetTimer();
   }, [difficulty, resetTimer]);
 
   useEffect(() => { startGame(); }, []);
 
-  // ── Derived values ──────────────────────────────────────────────
   const conflicts   = board ? getConflicts(board) : new Set();
   const selectedVal = selected && board ? board[selected[0]][selected[1]] : 0;
 
@@ -72,7 +128,6 @@ export function useGame() {
     return sv !== 0 && board[r][c] === sv;
   }
 
-  // ── History ─────────────────────────────────────────────────────
   function saveHistory() {
     setHistory((h) => [...h, {
       board: board.map((r) => [...r]),
@@ -81,7 +136,6 @@ export function useGame() {
     }]);
   }
 
-  // ── Handlers ────────────────────────────────────────────────────
   function stampNote(r, c, num) {
     if (!board || won || paused || given[r][c] || board[r][c] !== 0) return;
     saveHistory();
@@ -107,9 +161,14 @@ export function useGame() {
     newBoard[r][c] = num;
 
     let newMistakes = mistakeCount;
-    if (num !== 0 && solution[r][c] !== num) {
+    const isCorrect = num === 0 || solution[r][c] === num;
+
+    if (num !== 0 && !isCorrect) {
       newMistakes = mistakeCount + 1;
       setMistakeCount(newMistakes);
+      setLastAction({ type: 'wrong', r, c, id: Date.now() });
+    } else if (num !== 0) {
+      setLastAction({ type: 'correct', r, c, id: Date.now() });
     }
 
     let newNotes = Object.fromEntries(Object.entries(notes).map(([k, v]) => [k, new Set(v)]));
@@ -135,6 +194,8 @@ export function useGame() {
       setWon(true);
       setStreak((s) => s + 1);
       setScore(calcScore(seconds, difficulty, newMistakes));
+    } else if (num !== 0 && isCorrect) {
+      checkCompletions(newBoard, solution, board);
     }
   }
 
@@ -190,6 +251,7 @@ export function useGame() {
     const newBoard = board.map((row) => [...row]);
     newBoard[r][c] = solution[r][c];
     setBoard(newBoard);
+    setLastAction({ type: 'correct', r, c, id: Date.now() });
     const newNotes = Object.fromEntries(Object.entries(notes).map(([k, v]) => [k, new Set(v)]));
     delete newNotes[`${r}-${c}`];
     setNotes(newNotes);
@@ -198,25 +260,17 @@ export function useGame() {
       setWon(true);
       setStreak((s) => s + 1);
       setScore(calcScore(seconds, difficulty, mistakeCount));
+    } else {
+      checkCompletions(newBoard, solution, board);
     }
   }
 
-  function togglePause() { setPaused((p) => !p); }
-
+  function togglePause()      { setPaused((p) => !p); }
   function toggleAutoRemove() { setAutoRemove((v) => !v); }
-
-  function togglePencilMode() {
-    setPencilMode((p) => { if (p) setPencilNum(null); return !p; });
-  }
-
-  function changeDifficulty(diff) {
-    setShowDiffMenu(false);
-    setDifficulty(diff);
-    startGame(diff);
-  }
+  function togglePencilMode() { setPencilMode((p) => { if (p) setPencilNum(null); return !p; }); }
+  function changeDifficulty(diff) { setShowDiffMenu(false); setDifficulty(diff); startGame(diff); }
 
   return {
-    // state
     difficulty, given, board, solution,
     selected, setSelected,
     mistakeCount, won, paused,
@@ -224,10 +278,9 @@ export function useGame() {
     notes, streak, autoRemove, score,
     showDiffMenu, setShowDiffMenu,
     fastPencilOn, seconds,
-    // derived
+    lastAction, toast,
     conflicts, remaining, selectedVal,
     isHighlighted, isSameNum,
-    // handlers
     startGame, inputNum, stampNote,
     fastPencil, erase, undo, hint,
     togglePause, toggleAutoRemove,
