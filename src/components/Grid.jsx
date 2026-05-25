@@ -75,9 +75,12 @@ export default function Grid({
             const borderRight  = (c + 1) % 3 === 0 && c !== 8 ? `2px solid ${theme.borderBox}` : `1px solid ${theme.border}`;
             const borderBottom = (r + 1) % 3 === 0 && r !== 8 ? `2px solid ${theme.borderBox}` : `1px solid ${theme.border}`;
 
-            const numColor = theme.numberColors && val
-              ? (isGiven ? theme.textGiven : (isSel ? theme.white : theme.numberColors[val]))
-              : (isSel ? theme.white : textColor);
+            const numColor = !val ? null
+              : isSel    ? theme.white
+              : isConf   ? theme.textConflict
+              : isGiven  ? theme.textGiven
+              : theme.numberColors ? theme.numberColors[val]
+              : textColor;
 
             return (
               <div key={key}
