@@ -1,0 +1,27 @@
+const C = {
+  bg:          "#e8f5ef",
+  bgDark:      "#d4ece0",
+  primary:     "#2e9e6b",
+  primaryLight:"#4ab882",
+  primaryPale: "#c8ead9",
+  gridBg:      "#f0faf5",
+  cellBg:      "#f7fcf9",
+  cellSelect:  "#2e9e6b",
+  cellHover:   "#d6f0e3",
+  cellSameNum: "#b8e8ce",
+  cellConflict:"#fddcdc",
+  given:       "#1a3d2b",
+  userNum:     "#2e9e6b",
+  conflict:    "#e05252",
+  note:        "#2e9e6b",
+  border:      "#b5d9c5",
+  borderBox:   "#2e9e6b",
+  text:        "#1a3d2b",
+  textMuted:   "#6aaa8a",
+  textLight:   "#a0c9b0",
+  white:       "#ffffff",
+  eraseBtn:    "#f0faf5",
+  mistakeRed:  "#e05252",
+};
+
+export default C;
