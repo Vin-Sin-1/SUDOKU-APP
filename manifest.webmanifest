@@ -1,0 +1,1 @@
+{"name":"Sudoku","short_name":"Sudoku","start_url":"/SUDOKU-APP/","display":"standalone","background_color":"#e8f5ef","theme_color":"#2e9e6b","lang":"en","scope":"/SUDOKU-APP/","orientation":"portrait","icons":[{"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]}
