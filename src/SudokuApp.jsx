@@ -1,17 +1,26 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useGame } from './hooks/useGame.js';
-import C from './constants/colors.js';
+import { ThemeProvider } from './contexts/ThemeContext.jsx';
+import { useTheme } from './contexts/ThemeContext.jsx';
 import Header from './components/Header.jsx';
 import InfoBar from './components/InfoBar.jsx';
 import Grid from './components/Grid.jsx';
 import ActionBar from './components/ActionBar.jsx';
 import NumberPad from './components/NumberPad.jsx';
 import WinOverlay from './components/WinOverlay.jsx';
+import Toast from './components/Toast.jsx';
+import ThemePicker from './components/ThemePicker.jsx';
 
-export default function SudokuApp() {
+function AppInner() {
   const game = useGame();
+  const { theme } = useTheme();
+  const [showThemePicker, setShowThemePicker] = useState(false);
 
-  // Keyboard handler
+  useEffect(() => {
+    document.documentElement.style.setProperty('--btn-num-edge', theme.btnNumEdge);
+    document.documentElement.style.setProperty('--btn-action-edge', theme.btnActionEdge);
+  }, [theme]);
+
   useEffect(() => {
     function onKey(e) {
       if (game.won || game.paused) return;
@@ -29,15 +38,15 @@ export default function SudokuApp() {
   }, [game.selected, game.board, game.won, game.paused, game.pencilMode]);
 
   if (!game.board) return (
-    <div style={{ background: C.bg, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <span style={{ color: C.primary, fontWeight: 700 }}>Loading…</span>
+    <div style={{ background: theme.appBg, minHeight: '100svh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <span style={{ color: theme.primary, fontWeight: 700 }}>Loading…</span>
     </div>
   );
 
   return (
     <div style={{
       height: '100svh',
-      background: C.bg,
+      background: theme.appBg,
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
@@ -46,7 +55,9 @@ export default function SudokuApp() {
       userSelect: 'none',
       overflow: 'hidden',
     }}>
-      <Header streak={game.streak} />
+      <Toast toast={game.toast} />
+
+      <Header streak={game.streak} onThemePicker={() => setShowThemePicker(true)} />
 
       <InfoBar
         mistakeCount={game.mistakeCount}
@@ -75,6 +86,7 @@ export default function SudokuApp() {
         onSelectCell={(r, c) => game.setSelected([r, c])}
         onStampNote={game.stampNote}
         onResume={game.togglePause}
+        lastAction={game.lastAction}
       />
 
       <ActionBar
@@ -99,17 +111,17 @@ export default function SudokuApp() {
         width: '100%', padding: '0 12px',
         display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8,
       }}>
-        <span style={{ fontSize: 11, color: C.textMuted, fontWeight: 700 }}>Auto-remove notes</span>
+        <span style={{ fontSize: 11, color: theme.textMuted, fontWeight: 700 }}>Auto-remove notes</span>
         <div onClick={game.toggleAutoRemove} style={{
           width: 40, height: 22, borderRadius: 11,
-          background: game.autoRemove ? C.primary : C.border,
+          background: game.autoRemove ? theme.toggleOn : theme.toggleOff,
           position: 'relative', cursor: 'pointer',
           transition: 'background 0.2s',
         }}>
           <div style={{
             position: 'absolute', top: 3, left: game.autoRemove ? 20 : 3,
             width: 16, height: 16, borderRadius: '50%',
-            background: C.white,
+            background: theme.white,
             transition: 'left 0.2s',
             boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
           }} />
@@ -125,6 +137,16 @@ export default function SudokuApp() {
         streak={game.streak}
         onPlayAgain={() => game.startGame()}
       />
+
+      {showThemePicker && <ThemePicker onClose={() => setShowThemePicker(false)} />}
     </div>
+  );
+}
+
+export default function SudokuApp() {
+  return (
+    <ThemeProvider>
+      <AppInner />
+    </ThemeProvider>
   );
 }
